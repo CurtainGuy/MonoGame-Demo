@@ -173,8 +173,6 @@ namespace Platformer2D
             ApplyGravity(elapsedSeconds);
 
             HandleInput(keyboardState, elapsedSeconds);
-            velocity.Y = DoJump(velocity.Y, elapsedSeconds);
-
 
             ApplyDrag();
             ApplyVelocity(elapsedSeconds);
@@ -206,35 +204,13 @@ namespace Platformer2D
             isJumping = false;
         }
 
-        /// <summary>
-        /// Gets player horizontal movement and jump commands from input.
-        /// </summary>
         private void HandleInput(KeyboardState keyboardState,
             float elapsedSeconds)
         {
+            // ---- Practical 1 ----
+            // Hint: Use the MoveAcceleration for moving left and right
+            //       and the JumpLaunchVelocity for jumping
 
-            // Ignore small movements to prevent running in place.
-            if (Math.Abs(movement) < 0.5f)
-                movement = 0.0f;
-
-            // If any digital horizontal movement input is found, override the analog movement.
-            if (keyboardState.IsKeyDown(Keys.Left) ||
-                keyboardState.IsKeyDown(Keys.A))
-            {
-                velocity.X += -1.0f * MoveAcceleration * elapsedSeconds;
-            }
-            else if (keyboardState.IsKeyDown(Keys.Right) ||
-                     keyboardState.IsKeyDown(Keys.D))
-            {
-                velocity.X += 1.0f * MoveAcceleration * elapsedSeconds;
-            }
-
-            // Check if the player wants to jump.
-            if(keyboardState.IsKeyDown(Keys.Space) ||
-                keyboardState.IsKeyDown(Keys.Up) ||
-                keyboardState.IsKeyDown(Keys.W)) {
-                isJumping = true;
-            }
         }
 
         public void ApplyGravity(float elapsedSeconds)
@@ -259,50 +235,6 @@ namespace Platformer2D
             // Apply velocity.
             Position += velocity * elapsedSeconds;
             Position = new Vector2((float)Math.Round(Position.X), (float)Math.Round(Position.Y));
-        }
-
-        /// <summary>
-        /// Calculates the Y velocity accounting for jumping and
-        /// animates accordingly.
-        /// </summary>
-        /// <param name="velocityY">
-        /// The player's current velocity along the Y axis.
-        /// </param>
-        /// <returns>
-        /// A new Y velocity if beginning or continuing a jump.
-        /// Otherwise, the existing Y velocity.
-        /// </returns>
-        private float DoJump(float velocityY, float elapsedSeconds)
-        {
-            // If the player wants to jump
-            if (isJumping)
-            {
-                // Begin or continue a jump
-                if ((!wasJumping && IsOnGround) || jumpTime > 0.0f)
-                {
-                    jumpTime += elapsedSeconds;
-                    sprite.PlayAnimation(jumpAnimation);
-                }
-
-                // If we are in the ascent of the jump
-                if (0.0f < jumpTime && jumpTime <= MaxJumpTime)
-                {
-                    // Fully override the vertical velocity with a power curve that gives players more control over the top of the jump
-                    velocityY = JumpLaunchVelocity * (1.0f - (float)Math.Pow(jumpTime / MaxJumpTime, JumpControlPower));
-                }
-                else
-                {
-                    // Reached the apex of the jump
-                    jumpTime = 0.0f;
-                }
-            }
-            else
-            {
-                // Continues not jumping or cancels a jump in progress
-                jumpTime = 0.0f;
-            }
-            wasJumping = isJumping;
-            return velocityY;
         }
 
         /// <summary>
