@@ -165,13 +165,29 @@ namespace Platformer2D
         /// once per frame. We also pass the game's orientation because when using the accelerometer,
         /// we need to reverse our motion when the orientation is in the LandscapeRight orientation.
         /// </remarks>
-        public void Update(
-            GameTime gameTime, 
-            KeyboardState keyboardState)
+        public void Update(GameTime gameTime, KeyboardState keyboardState)
         {
-            GetInput(keyboardState);
+            float elapsedSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            Vector2 previousPosition = Position;
 
-            ApplyPhysics(gameTime);
+            ApplyGravity(elapsedSeconds);
+
+            HandleInput(keyboardState, elapsedSeconds);
+            velocity.Y = DoJump(velocity.Y, elapsedSeconds);
+
+
+            ApplyDrag();
+            ApplyVelocity(elapsedSeconds);
+
+            // If the player is now colliding with the level, separate them.
+            HandleCollisions();
+
+            // If the collision stopped us from moving, reset the velocity to zero.
+            if (Position.X == previousPosition.X)
+                velocity.X = 0;
+
+            if (Position.Y == previousPosition.Y)
+                velocity.Y = 0;
 
             if (IsAlive && IsOnGround)
             {
@@ -193,8 +209,8 @@ namespace Platformer2D
         /// <summary>
         /// Gets player horizontal movement and jump commands from input.
         /// </summary>
-        private void GetInput(
-            KeyboardState keyboardState)
+        private void HandleInput(KeyboardState keyboardState,
+            float elapsedSeconds)
         {
 
             // Ignore small movements to prevent running in place.
@@ -205,37 +221,29 @@ namespace Platformer2D
             if (keyboardState.IsKeyDown(Keys.Left) ||
                 keyboardState.IsKeyDown(Keys.A))
             {
-                movement = -1.0f;
+                velocity.X += -1.0f * MoveAcceleration * elapsedSeconds;
             }
             else if (keyboardState.IsKeyDown(Keys.Right) ||
                      keyboardState.IsKeyDown(Keys.D))
             {
-                movement = 1.0f;
+                velocity.X += 1.0f * MoveAcceleration * elapsedSeconds;
             }
 
             // Check if the player wants to jump.
-            isJumping =
-                keyboardState.IsKeyDown(Keys.Space) ||
+            if(keyboardState.IsKeyDown(Keys.Space) ||
                 keyboardState.IsKeyDown(Keys.Up) ||
-                keyboardState.IsKeyDown(Keys.W);
+                keyboardState.IsKeyDown(Keys.W)) {
+                isJumping = true;
+            }
         }
 
-        /// <summary>
-        /// Updates the player's velocity and position based on input, gravity, etc.
-        /// </summary>
-        public void ApplyPhysics(GameTime gameTime)
+        public void ApplyGravity(float elapsedSeconds)
         {
-            float elapsed = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            velocity.Y = MathHelper.Clamp(velocity.Y + GravityAcceleration * elapsedSeconds, -MaxFallSpeed, MaxFallSpeed);
+        }
 
-            Vector2 previousPosition = Position;
-
-            // Base velocity is a combination of horizontal movement control and
-            // acceleration downward due to gravity.
-            velocity.X += movement * MoveAcceleration * elapsed;
-            velocity.Y = MathHelper.Clamp(velocity.Y + GravityAcceleration * elapsed, -MaxFallSpeed, MaxFallSpeed);
-
-            velocity.Y = DoJump(velocity.Y, gameTime);
-
+        public void ApplyDrag()
+        {
             // Apply pseudo-drag horizontally.
             if (IsOnGround)
                 velocity.X *= GroundDragFactor;
@@ -244,20 +252,13 @@ namespace Platformer2D
 
             // Prevent the player from running faster than his top speed.            
             velocity.X = MathHelper.Clamp(velocity.X, -MaxMoveSpeed, MaxMoveSpeed);
+        }
 
+        public void ApplyVelocity(float elapsedSeconds)
+        {
             // Apply velocity.
-            Position += velocity * elapsed;
+            Position += velocity * elapsedSeconds;
             Position = new Vector2((float)Math.Round(Position.X), (float)Math.Round(Position.Y));
-
-            // If the player is now colliding with the level, separate them.
-            HandleCollisions();
-
-            // If the collision stopped us from moving, reset the velocity to zero.
-            if (Position.X == previousPosition.X)
-                velocity.X = 0;
-
-            if (Position.Y == previousPosition.Y)
-                velocity.Y = 0;
         }
 
         /// <summary>
@@ -271,39 +272,35 @@ namespace Platformer2D
         /// A new Y velocity if beginning or continuing a jump.
         /// Otherwise, the existing Y velocity.
         /// </returns>
-        private float DoJump(float velocityY, GameTime gameTime)
+        private float DoJump(float velocityY, float elapsedSeconds)
         {
-            //// If the player wants to jump
-            //if (isJumping)
-            //{
-            //    // Begin or continue a jump
-            //    if ((!wasJumping && IsOnGround) || jumpTime > 0.0f)
-            //    {
-            //        jumpTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
-            //        sprite.PlayAnimation(jumpAnimation);
-            //    }
+            // If the player wants to jump
+            if (isJumping)
+            {
+                // Begin or continue a jump
+                if ((!wasJumping && IsOnGround) || jumpTime > 0.0f)
+                {
+                    jumpTime += elapsedSeconds;
+                    sprite.PlayAnimation(jumpAnimation);
+                }
 
-            //    // If we are in the ascent of the jump
-            //    if (0.0f < jumpTime && jumpTime <= MaxJumpTime)
-            //    {
-            //        // Fully override the vertical velocity with a power curve that gives players more control over the top of the jump
-            //        velocityY = JumpLaunchVelocity * (1.0f - (float)Math.Pow(jumpTime / MaxJumpTime, JumpControlPower));
-            //    }
-            //    else
-            //    {
-            //        // Reached the apex of the jump
-            //        jumpTime = 0.0f;
-            //    }
-            //}
-            //else
-            //{
-            //    // Continues not jumping or cancels a jump in progress
-            //    jumpTime = 0.0f;
-            //}
-            //wasJumping = isJumping;
-
-            if(IsOnGround && isJumping) { velocityY = JumpLaunchVelocity; }
-
+                // If we are in the ascent of the jump
+                if (0.0f < jumpTime && jumpTime <= MaxJumpTime)
+                {
+                    // Fully override the vertical velocity with a power curve that gives players more control over the top of the jump
+                    velocityY = JumpLaunchVelocity * (1.0f - (float)Math.Pow(jumpTime / MaxJumpTime, JumpControlPower));
+                }
+                else
+                {
+                    // Reached the apex of the jump
+                    jumpTime = 0.0f;
+                }
+            }
+            else
+            {
+                // Continues not jumping or cancels a jump in progress
+                jumpTime = 0.0f;
+            }
             wasJumping = isJumping;
             return velocityY;
         }
@@ -314,7 +311,7 @@ namespace Platformer2D
         /// axis to prevent overlapping. There is some special logic for the Y axis to
         /// handle platforms which behave differently depending on direction of movement.
         /// </summary>
-        private void HandleCollisions()
+        public void HandleCollisions()
         {
             // Get the player's bounding rectangle and find neighboring tiles.
             Rectangle bounds = BoundingRectangle;

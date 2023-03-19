@@ -368,14 +368,17 @@ namespace Platformer2D
         /// </summary>
         public void Update(
             GameTime gameTime, 
-            KeyboardState keyboardState, 
-            GamePadState gamePadState)
+            KeyboardState keyboardState)
         {
             // Pause while the player is dead or time is expired.
             if (!Player.IsAlive || TimeRemaining == TimeSpan.Zero)
             {
+                float elapsedSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
                 // Still want to perform physics on the player.
-                Player.ApplyPhysics(gameTime);
+                Player.ApplyGravity(elapsedSeconds);
+                Player.ApplyDrag();
+                Player.ApplyVelocity(elapsedSeconds);
+                Player.HandleCollisions();
             }
             else if (ReachedExit)
             {
@@ -388,7 +391,7 @@ namespace Platformer2D
             else
             {
                 timeRemaining -= gameTime.ElapsedGameTime;
-                Player.Update(gameTime, keyboardState, gamePadState);
+                Player.Update(gameTime, keyboardState);
                 UpdateGems(gameTime);
 
                 // Falling off the bottom of the level kills the player.
