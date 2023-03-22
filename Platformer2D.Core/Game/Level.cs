@@ -373,12 +373,8 @@ namespace Platformer2D
             // Pause while the player is dead or time is expired.
             if (!Player.IsAlive || TimeRemaining == TimeSpan.Zero)
             {
-                float elapsedSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
                 // Still want to perform physics on the player.
-                Player.ApplyGravity(elapsedSeconds);
-                Player.ApplyDrag();
-                Player.ApplyVelocity(elapsedSeconds);
-                Player.HandleCollisions();
+                Player.ApplyPhysics(gameTime);
             }
             else if (ReachedExit)
             {
