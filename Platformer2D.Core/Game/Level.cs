@@ -438,24 +438,7 @@ namespace Platformer2D
 
         private void UpdateBullets(GameTime gameTime)
         {
-            for (int i = 0; i < bullets.Count; ++i)
-            {
-                Bullet bullet = bullets[i];
-
-                bullet.Update(gameTime);
-
-                for (int e = 0; e < enemies.Count; ++e)
-                {
-                    Enemy enemy = enemies[e];
-
-                    if (bullet.BoundingRectangle.Intersects(enemy.BoundingRectangle))
-                    {
-                        bullets.RemoveAt(i--);
-                        enemies.Remove(enemy);
-                    }
-                }
-                    
-            }
+            // Practical 2 starts here!
         }
 
         /// <summary>
