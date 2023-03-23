@@ -12,6 +12,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Platformer2D.Core.Game;
 
 namespace Platformer2D
 {
@@ -72,12 +73,9 @@ namespace Platformer2D
         private const float JumpLaunchVelocity = -3500.0f;
         private const float GravityAcceleration = 3400.0f;
         private const float MaxFallSpeed = 550.0f;
-        private const float JumpControlPower = 0.14f; 
+        private const float JumpControlPower = 0.14f;
 
-        // Input configuration
-        private const float MoveStickScale = 1.0f;
-        private const float AccelerometerScale = 1.5f;
-        private const Buttons JumpButton = Buttons.A;
+        private const float shootDelay = 1000f;
 
         /// <summary>
         /// Gets whether or not the player's feet are on the ground.
@@ -97,6 +95,8 @@ namespace Platformer2D
         private bool isJumping;
         private bool wasJumping;
         private float jumpTime;
+        private bool isShooting;
+        private float timeSinceLastBullet = 1000f;
 
         private Rectangle localBounds;
         /// <summary>
@@ -167,11 +167,26 @@ namespace Platformer2D
         /// </remarks>
         public void Update(
             GameTime gameTime,
-            KeyboardState keyboardState)
+            KeyboardState keyboardState,
+            MouseState mouseState)
         {
-            GetInput(keyboardState);
+            GetInput(keyboardState, mouseState);
 
             ApplyPhysics(gameTime);
+
+
+            if (timeSinceLastBullet > shootDelay)
+            {
+                if (isShooting)
+                {
+                    Shoot(mouseState, gameTime);
+                    timeSinceLastBullet = 0;
+                }
+            }
+            else
+            {
+                timeSinceLastBullet += gameTime.ElapsedGameTime.Milliseconds;
+            }
 
             if (IsAlive && IsOnGround)
             {
@@ -188,13 +203,15 @@ namespace Platformer2D
             // Clear input.
             movement = 0.0f;
             isJumping = false;
+            isShooting = false;
         }
 
         /// <summary>
         /// Gets player horizontal movement and jump commands from input.
         /// </summary>
         private void GetInput(
-            KeyboardState keyboardState)
+            KeyboardState keyboardState,
+            MouseState mouseState)
         {
             // If any digital horizontal movement input is found, override the analog movement.
             if (keyboardState.IsKeyDown(Keys.Left) ||
@@ -212,6 +229,11 @@ namespace Platformer2D
             isJumping = keyboardState.IsKeyDown(Keys.Space) ||
                 keyboardState.IsKeyDown(Keys.Up) ||
                 keyboardState.IsKeyDown(Keys.W);
+
+            if(mouseState.LeftButton == ButtonState.Pressed)
+            {
+                isShooting = true;
+            }
         }
 
         /// <summary>
@@ -252,6 +274,13 @@ namespace Platformer2D
 
             if (Position.Y == previousPosition.Y)
                 velocity.Y = 0;
+        }
+
+        private void Shoot(MouseState mouseState, GameTime gameTime)
+        {
+            Vector2 direction = position - MouseHelper.TranslateMousePointToGamePosition(mouseState);
+            direction.Normalize();
+            Level.bullets.Add(new Bullet(level, BoundingRectangle.Center.ToVector2(), direction));
         }
 
         /// <summary>

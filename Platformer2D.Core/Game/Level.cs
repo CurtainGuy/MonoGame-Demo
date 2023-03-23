@@ -15,6 +15,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Audio;
 using System.IO;
 using Microsoft.Xna.Framework.Input;
+using Platformer2D.Core.Game;
 
 namespace Platformer2D
 {
@@ -40,6 +41,7 @@ namespace Platformer2D
 
         private List<Gem> gems = new List<Gem>();
         private List<Enemy> enemies = new List<Enemy>();
+        public List<Bullet> bullets = new List<Bullet>();
 
         // Key locations in the level.        
         private Vector2 start;
@@ -102,7 +104,8 @@ namespace Platformer2D
             for (int i = 0; i < layers.Length; ++i)
             {
                 // Choose a random segment if each background layer for level variety.
-                int segmentIndex = levelIndex;
+                int segmentIndex = Math.Min(2, levelIndex);
+
                 layers[i] = Content.Load<Texture2D>("Backgrounds/Layer" + i + "_" + segmentIndex);
             }
         }
@@ -368,7 +371,8 @@ namespace Platformer2D
         /// </summary>
         public void Update(
             GameTime gameTime, 
-            KeyboardState keyboardState)
+            KeyboardState keyboardState,
+            MouseState mouseState)
         {
             // Pause while the player is dead or time is expired.
             if (!Player.IsAlive || TimeRemaining == TimeSpan.Zero)
@@ -387,8 +391,9 @@ namespace Platformer2D
             else
             {
                 timeRemaining -= gameTime.ElapsedGameTime;
-                Player.Update(gameTime, keyboardState);
+                Player.Update(gameTime, keyboardState, mouseState);
                 UpdateGems(gameTime);
+                UpdateBullets(gameTime);
 
                 // Falling off the bottom of the level kills the player.
                 if (Player.BoundingRectangle.Top >= Height * Tile.Height)
@@ -428,6 +433,28 @@ namespace Platformer2D
                     gems.RemoveAt(i--);
                     OnGemCollected(gem, Player);
                 }
+            }
+        }
+
+        private void UpdateBullets(GameTime gameTime)
+        {
+            for (int i = 0; i < bullets.Count; ++i)
+            {
+                Bullet bullet = bullets[i];
+
+                bullet.Update(gameTime);
+
+                for (int e = 0; e < enemies.Count; ++e)
+                {
+                    Enemy enemy = enemies[e];
+
+                    if (bullet.BoundingRectangle.Intersects(enemy.BoundingRectangle))
+                    {
+                        bullets.RemoveAt(i--);
+                        enemies.Remove(enemy);
+                    }
+                }
+                    
             }
         }
 
@@ -510,6 +537,9 @@ namespace Platformer2D
 
             foreach (Enemy enemy in enemies)
                 enemy.Draw(gameTime, spriteBatch);
+
+            foreach (Bullet bullet in bullets)
+                bullet.Draw(gameTime, spriteBatch);
 
             for (int i = EntityLayer + 1; i < layers.Length; ++i)
                 spriteBatch.Draw(layers[i], Vector2.Zero, Color.White);

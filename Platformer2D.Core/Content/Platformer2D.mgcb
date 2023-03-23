@@ -137,6 +137,9 @@
 #begin Levels/2.txt
 /copy:Levels/2.txt
 
+#begin Levels/3.txt
+/copy:Levels/3.txt
+
 #begin Overlays/you_died.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -172,6 +175,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:Overlays/you_win.png
+
+#begin Sprites/Bullet.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Sprites/Bullet.png
 
 #begin Sprites/Gem.png
 /importer:TextureImporter

@@ -14,6 +14,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Input.Touch;
 using Microsoft.Xna.Framework.Content;
+using Platformer2D.Core.Game;
 
 #if !__IOS__
 using Microsoft.Xna.Framework.Media;
@@ -30,7 +31,7 @@ namespace Platformer2D
         private GraphicsDeviceManager graphics;
         private SpriteBatch spriteBatch;
         Vector2 baseScreenSize = new Vector2(800, 480);
-        private Matrix globalTransformation;
+        public Matrix globalTransformation;
         int backbufferWidth, backbufferHeight;
 
         // Global content.
@@ -51,12 +52,13 @@ namespace Platformer2D
         // We store our input states so that we only poll once per frame, 
         // then we use the same input state wherever needed
         private KeyboardState keyboardState;
+        private MouseState mouseState;
 
         // The number of levels in the Levels directory of our content. We assume that
         // levels in our content are 0-based and that all numbers under this constant
         // have a level file present. This allows us to not need to check for the file
         // or handle exceptions, both of which can add unnecessary time to level loading.
-        private const int numberOfLevels = 3;
+        private const int numberOfLevels = 4;
 
         public PlatformerGame()
         {
@@ -67,6 +69,8 @@ namespace Platformer2D
             //graphics.PreferredBackBufferWidth = 800;
             //graphics.PreferredBackBufferHeight = 480;
             graphics.SupportedOrientations = DisplayOrientation.LandscapeLeft | DisplayOrientation.LandscapeRight;
+            MouseHelper.Initialize(this);
+            IsMouseVisible = true;
         }
 
         /// <summary>
@@ -122,7 +126,7 @@ namespace Platformer2D
             HandleInput(gameTime);
 
             // update our level, passing down the GameTime along with all of our input states
-            level.Update(gameTime, keyboardState);
+            level.Update(gameTime, keyboardState, mouseState);
 
 
             base.Update(gameTime);
@@ -132,6 +136,7 @@ namespace Platformer2D
         {
             // get all of our input states
             keyboardState = Keyboard.GetState();
+            mouseState = Mouse.GetState();
 
             bool continuePressed =
                 keyboardState.IsKeyDown(Keys.Space);

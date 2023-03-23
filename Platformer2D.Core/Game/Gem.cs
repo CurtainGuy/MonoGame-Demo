@@ -21,7 +21,6 @@ namespace Platformer2D
     {
         private Texture2D texture;
         private Vector2 origin;
-        private SoundEffect collectedSound;
 
         public readonly int PointValue = 30;
         public readonly Color Color = Color.Yellow;
